@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient'
 
 export function useIncidentData() {
   const [incidents, setIncidents] = useState<any[]>([])
@@ -11,6 +11,12 @@ export function useIncidentData() {
   const [isMonitoring, setIsMonitoring] = useState(true)
 
   useEffect(() => {
+    // Only attempt to fetch alerts if Supabase is configured
+    if (!isSupabaseConfigured() || !supabase) {
+      console.warn('Supabase not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.')
+      return
+    }
+
     fetchAlerts()
 
     const channel = supabase.channel('public:alerts')
@@ -30,6 +36,8 @@ export function useIncidentData() {
   }, [])
 
   async function fetchAlerts() {
+    if (!supabase) return
+    
     const { data, error } = await supabase.from('alerts').select('*').order('timestamp', { ascending: false })
     if (!error && data) setAlerts(data)
   }
